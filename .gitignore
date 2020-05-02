@@ -1,0 +1,22 @@
+# Common ignored files and directories
+.vscode/
+.idea/
+
+.DS_Store
+Thumbs.db
+
+__pycache__/
+*$.py.class
+eggs/
+.eggs/
+*.egg-info/
+
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+.env
+.venv
+env/
+venv/
+ENV/
