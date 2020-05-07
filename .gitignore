@@ -20,3 +20,6 @@ ipython_config.py
 env/
 venv/
 ENV/
+
+# videos folder for project dataset
+videos/
