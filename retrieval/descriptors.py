@@ -3,7 +3,8 @@ import csv
 import datetime
 
 
-PAINTINGS_FOLDER = 'data/paintings_db'
+PAINTINGS_FOLDER = 'paintings_db'
+PAINTINGS_CSV = 'data.csv'
 NORM = cv2.NORM_HAMMING
 
 
@@ -33,7 +34,7 @@ def get_paintings(orb):
     :return: list of Image objects
     """
     paintings = []
-    with open('data/data.csv', 'r') as f:
+    with open(PAINTINGS_CSV, 'r') as f:
         f_reader = csv.DictReader(f)
         for row in f_reader:
             im = cv2.imread(f"{PAINTINGS_FOLDER}/{row['Image']}")
@@ -45,11 +46,3 @@ def get_paintings(orb):
             paintings.append(image)
     return paintings
 
-
-if __name__ == '__main__':
-    orb = cv2.ORB_create(500, 1.5, WTA_K=2)
-    start = datetime.datetime.now()
-    p = get_paintings(orb)
-    end = datetime.datetime.now()
-    print(end - start)
-    print(len(p))

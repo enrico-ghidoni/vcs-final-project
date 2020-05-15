@@ -5,8 +5,7 @@ import os
 from descriptors import get_paintings, compute_kp_descr, Image
 
 
-PAINTINGS_FOLDER = 'data/paintings_db'
-QUERY_IMAGES = 'data/Rec_Image/Rectified'
+QUERY_IMAGES = 'Rectified'
 # using Hamming distance
 NORM = cv2.NORM_HAMMING
 BF = cv2.BFMatcher(NORM, crossCheck=True)
@@ -71,6 +70,7 @@ def draw_matches(query_image, images_matched, num_kp_matched = 10):
 
 
 if __name__ == '__main__':
+    # those parameters are optimal for this purpose
     orb = cv2.ORB_create(500, 1.4, WTA_K=2)
     paintings_descriptors = get_paintings(orb)
     for filename in os.listdir(QUERY_IMAGES):
