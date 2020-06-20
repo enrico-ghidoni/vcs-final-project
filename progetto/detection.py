@@ -4,6 +4,7 @@ import numpy as np
 import os
 from matplotlib import pyplot as plt
 import random as rng
+import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--video',
@@ -15,7 +16,11 @@ parser.add_argument('--onein',
                     type=int,
                     default=1)
 parser.add_argument('--debug',
-                    help='Enable debug logging',
+                    help='Show detailed comparison of image processing, if off only bounding '
+                         'boxes applied to original frame will be shown.',
+                    action='store_true')
+parser.add_argument('--noshow',
+                    help=' Do not show results while processing.',
                     action='store_true')
 
 
@@ -24,12 +29,13 @@ def close(event):
         plt.close(event.canvas.figure)
 
 
-def main(video, output_file, onein, debug=False):
+def main(video, output_file, onein, debug=False, noshow=False):
     frame_count = 1
+    bboxes_json = {}
 
     print(f'main starting with video {video}')
     cap = cv2.VideoCapture(video)
-    while(cap.isOpened()):
+    while cap.isOpened():
         ret, frame = cap.read()
         if frame_count % onein == 0:
 
@@ -128,6 +134,11 @@ def main(video, output_file, onein, debug=False):
             
     cap.release()
     cv2.destroyAllWindows()
+
+    print(f'Writing bounding boxes to {output_file}')
+    print(json.dumps(bboxes_json))
+    with open(output_file, 'w') as file:
+        json.dump(bboxes_json, file)
 
 
 if __name__ == '__main__':
