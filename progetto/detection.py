@@ -39,13 +39,18 @@ def main(video, output_file, onein, debug=False):
             std = np.std(gray)
             gf_size = int(np.ceil(3 * std) // 2 * 2 + 1)
             gk_size = (gf_size, gf_size)
+            gk_size = (5, 5)
 
             filtered = cv2.GaussianBlur(gray, gk_size, 0)
-            otsu_th, th_img = cv2.threshold(filtered, 0, 127, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            otsu_th, th_img = cv2.threshold(filtered, 180, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY_INV)
+            print(otsu_th)
+            eroded_img = cv2.erode(th_img, None, iterations=10)
+            dilated_img = cv2.dilate(eroded_img, None, iterations=5)
 
-            edges = cv2.Canny(filtered, 0.5 * otsu_th, otsu_th)
+            edges = cv2.Canny(filtered, 0, 0.5 * otsu_th)
+            eroded_img = cv2.dilate(edges, None, iterations=4)
 
-            padded_img = np.pad(th_img, (5, 5), mode='constant', constant_values=(1, 1))
+            padded_img = np.pad(eroded_img, (5, 5), mode='constant', constant_values=(1, 1))
 
             contours_img = np.copy(rgb_frame)
             contours, hierarchy = cv2.findContours(padded_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -97,19 +102,22 @@ def main(video, output_file, onein, debug=False):
 
                 fig.canvas.set_window_title(f'Frame {frame_count}')
 
-                ax[0, 0].imshow(rgb_frame)
-                ax[0, 0].set_title('original frame')
+                ax[0, 0].imshow(edges, cmap='gray')
+                ax[0, 0].set_title('canny')
                 ax[0, 1].imshow(filtered, cmap='gray')
                 ax[0, 1].set_title('blurred image')
-                ax[0, 2].imshow(edges, cmap='gray')
-                ax[0, 2].set_title('canny edge detection')
+                ax[0, 2].imshow(eroded_img, cmap='gray')
+                ax[0, 2].set_title('eroded img')
                 ax[1, 0].imshow(th_img, cmap='gray')
                 ax[1, 0].set_title('otsu thresholding')
                 ax[1, 1].imshow(contours_img)
                 ax[1, 1].set_title('contours')
                 ax[1, 2].imshow(bboxes_img)
                 ax[1, 2].set_title('bounding boxes')
-                plt.gcf().canvas.mpl_connect('key_press_event', close)
+
+                # plt.imshow(rgb_frame)
+                # plt.gcf().canvas.mpl_connect('key_press_event', close)
+
                 plt.show()
             else:
                 out = cv2.cvtColor(bboxes_img, cv2.COLOR_RGB2BGR)
