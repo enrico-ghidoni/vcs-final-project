@@ -30,14 +30,17 @@ def close(event):
 
 
 def main(video, output_file, onein, debug=False, noshow=False):
-    frame_count = 1
+    frame_count = 0
     bboxes_json = {}
 
     print(f'main starting with video {video}')
     cap = cv2.VideoCapture(video)
     while cap.isOpened():
         ret, frame = cap.read()
-        if frame_count % onein == 0:
+        frame_count += 1
+        if frame_count % onein == 0 and ret:
+
+            bboxes_json[frame_count] = []
 
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -45,21 +48,41 @@ def main(video, output_file, onein, debug=False, noshow=False):
             std = np.std(gray)
             gf_size = int(np.ceil(3 * std) // 2 * 2 + 1)
             gk_size = (gf_size, gf_size)
-            gk_size = (5, 5)
+            gk_size = (13, 13)
 
             filtered = cv2.GaussianBlur(gray, gk_size, 0)
             otsu_th, th_img = cv2.threshold(filtered, 180, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY_INV)
-            print(otsu_th)
-            eroded_img = cv2.erode(th_img, None, iterations=10)
-            dilated_img = cv2.dilate(eroded_img, None, iterations=5)
+            # cv2.imshow('thresholded image', th_img)
+            # cv2.waitKey()
 
-            edges = cv2.Canny(filtered, 0, 0.5 * otsu_th)
-            eroded_img = cv2.dilate(edges, None, iterations=4)
+            dilated_img = cv2.dilate(th_img, None, iterations=15)
+            # cv2.imshow('dilated image', dilated_img)
+            # cv2.waitKey()
 
-            padded_img = np.pad(eroded_img, (5, 5), mode='constant', constant_values=(1, 1))
+            num_labels, labels_im = cv2.connectedComponentsWithAlgorithm(dilated_img, 8, cv2.CV_32S, cv2.CCL_GRANA)
+            print(num_labels)
+            print(len(labels_im))
+            label_hue = np.uint8(179 * labels_im / np.max(labels_im))
+            blank_ch = 255 * np.ones_like(label_hue)
+            labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
+            labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2BGR)
+            # cv2.imshow('connected components image', labeled_img)
+            # cv2.waitKey()
+
+            # eroded_img = cv2.dilate(dilated_img, None, iterations=5)
+            # cv2.imshow('eroded image', eroded_img)
+            # cv2.waitKey()
+
+            # edges = cv2.Canny(filtered, 0, 0.5 * otsu_th)
+            # eroded_img = cv2.dilate(edges, None, iterations=4)
+
+            # padded_img = np.pad(eroded_img, (15, 15), mode='constant', constant_values=(1, 1))
 
             contours_img = np.copy(rgb_frame)
-            contours, hierarchy = cv2.findContours(padded_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            contours, hierarchy = cv2.findContours(dilated_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+            outer_contour_index = [i for i, h in enumerate(hierarchy[0]) if h[3] == -1]
+            print(outer_contour_index)
 
             print(f'found {len(contours)} contours')
 
@@ -68,58 +91,47 @@ def main(video, output_file, onein, debug=False, noshow=False):
             for i, c in enumerate(contours):
                 contours_poly[i] = cv2.approxPolyDP(c, 3, True)
                 boundRect[i] = cv2.boundingRect(contours_poly[i])
+                bboxes_json[frame_count].append(boundRect[i])
 
             bboxes_img = np.copy(rgb_frame)
             for i in range(len(contours)):
+                # tengo solo i contours figli dell'outer contour
+                # print(f'contour {i}, hierarchy record {hierarchy[0][i]}')
+                # if hierarchy[0][i][3] in outer_contour_index:
                 color = (rng.randint(0, 256), rng.randint(0, 256), rng.randint(0, 256))
+                color = (255, 0, 0)
                 cv2.drawContours(contours_img, contours_poly, i, color, thickness=3)
                 cv2.rectangle(bboxes_img, (int(boundRect[i][0]), int(boundRect[i][1])), \
-                             (int(boundRect[i][0] + boundRect[i][2]), int(boundRect[i][1] + boundRect[i][3])), color, 3)
-
-            # estraggo i bounding boxes dai contours
-            # bboxes_img = np.copy(rgb_frame)
-            # bboxes = []
-            # for contour in contours:
-            #     contour_points = np.asarray(contour)
-            #     contour_points = np.squeeze(contour_points)
-            #
-            #     print(contour_points)
-            #
-            #     ulc_x, ulc_y = np.amin(contour_points, axis=0)
-            #     brc_x, brc_y = np.amax(contour_points, axis=0)
-            #     width = brc_x - ulc_x
-            #     height = brc_y - ulc_y
-            #
-            #     box = (ulc_x, ulc_y, width, height)
-            #     bboxes.append(box)
-            #
-            #     cv2.circle(bboxes_img, (ulc_x, ulc_y), 5, (0, 255, 0), 2)
-            #
-            # print(bboxes)
-
-            # disegno i bounding boxes
-            # for box in bboxes:
-            #     x, y, w, h = box
-            #     cv2.rectangle(bboxes_img, (x, y), (x + w, y + h),
-            #                   (0, 255, 0), 2)
+                            (int(boundRect[i][0] + boundRect[i][2]), int(boundRect[i][1] + boundRect[i][3])), color, 3)
 
             if debug:
-                fig, ax = plt.subplots(2, 3, figsize=(24, 14))
+                fig, ax = plt.subplots(2, 2, figsize=(14, 14))
 
                 fig.canvas.set_window_title(f'Frame {frame_count}')
 
-                ax[0, 0].imshow(edges, cmap='gray')
-                ax[0, 0].set_title('canny')
-                ax[0, 1].imshow(filtered, cmap='gray')
-                ax[0, 1].set_title('blurred image')
-                ax[0, 2].imshow(eroded_img, cmap='gray')
-                ax[0, 2].set_title('eroded img')
-                ax[1, 0].imshow(th_img, cmap='gray')
-                ax[1, 0].set_title('otsu thresholding')
-                ax[1, 1].imshow(contours_img)
-                ax[1, 1].set_title('contours')
-                ax[1, 2].imshow(bboxes_img)
-                ax[1, 2].set_title('bounding boxes')
+                # ax[0, 0].imshow(edges, cmap='gray')
+                # ax[0, 0].set_title('canny')
+                # ax[0, 1].imshow(filtered, cmap='gray')
+                # ax[0, 1].set_title('blurred image')
+                # ax[0, 2].imshow(eroded_img, cmap='gray')
+                # ax[0, 2].set_title('eroded img')
+                # ax[1, 0].imshow(th_img, cmap='gray')
+                # ax[1, 0].set_title('otsu thresholding')
+                # ax[1, 1].imshow(contours_img)
+                # ax[1, 1].set_title('contours')
+                # ax[1, 2].imshow(bboxes_img)
+                # ax[1, 2].set_title('bounding boxes')
+
+                ax[0, 0].imshow(frame, cmap='gray')
+                ax[0, 0].set_title(f'frame')
+                ax[0, 1].imshow(dilated_img, cmap='gray')
+                ax[0, 1].set_title(f'dilated image')
+                ax[1, 0].imshow(labeled_img)
+                ax[1, 0].set_title(f'labeled image')
+                ax[1, 1].imshow(bboxes_img)
+                ax[1, 1].set_title(f'bounding boxes')
+
+                plt.tight_layout()
 
                 # plt.imshow(rgb_frame)
                 # plt.gcf().canvas.mpl_connect('key_press_event', close)
@@ -129,10 +141,11 @@ def main(video, output_file, onein, debug=False, noshow=False):
                 out = cv2.cvtColor(bboxes_img, cv2.COLOR_RGB2BGR)
                 cv2.imshow(f'Output', out)
                 cv2.waitKey(75)
+        if not ret:
+            break
 
-        frame_count += 1
-            
     cap.release()
+    #if debug or not noshow:
     cv2.destroyAllWindows()
 
     print(f'Writing bounding boxes to {output_file}')
