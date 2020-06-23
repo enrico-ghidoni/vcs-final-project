@@ -69,7 +69,6 @@ def main(video, output_file, onein, debug=False, noshow=False):
             for i, c in enumerate(contours):
                 contours_poly[i] = cv2.approxPolyDP(c, 3, True)
                 boundRect[i] = cv2.boundingRect(contours_poly[i])
-                bboxes_json[frame_count].append(boundRect[i])
 
             # calculate the average area of the bounding boxes to remove the ones below
             bboxes_area = [box[2] * box[3] for box in boundRect]
@@ -83,6 +82,7 @@ def main(video, output_file, onein, debug=False, noshow=False):
                 # cv2.drawContours(contours_img, contours_poly, i, color, thickness=3)
                 cv2.rectangle(bboxes_img, (int(box[0]), int(box[1])), \
                             (int(box[0] + box[2]), int(box[1] + box[3])), color, 3)
+                bboxes_json[frame_count].append(box)
             if not noshow:
                 if debug:
                     fig, ax = plt.subplots(2, 2, figsize=(14, 14))
