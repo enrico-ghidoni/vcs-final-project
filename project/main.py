@@ -67,7 +67,6 @@ try:
     # Main process and rectification
     print("Inizialization images ...")
     for image_original in frames:
-        images.append(image_original)
 
         coordinates = list_coordinates[frame_count]
         print(f"FRAME: {coordinates}")
@@ -81,7 +80,7 @@ try:
 
                 #image_original, cont = rectification_db(img_p,image_db)
                 #images.append(image_db)
-                images.append(img_pers)
+                images.append(img_pers) #OUTPUT: list of rectified images
 
             except Exception:
                 print(f"ERROR 8: Error at coordinate {coordinate}")
