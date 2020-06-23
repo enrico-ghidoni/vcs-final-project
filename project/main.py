@@ -9,7 +9,7 @@ import sys
 Parameters: 
     1 JSON file
     2 video
-Return: Rectified images from the video
+Return: Rectified images from the video (var:images)
 """
 
 def saveImg(image, img_pers):
