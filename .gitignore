@@ -23,3 +23,6 @@ ENV/
 
 # videos folder for project dataset
 videos/
+
+# results of scripts execution
+out/
