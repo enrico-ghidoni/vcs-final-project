@@ -38,7 +38,6 @@ class PaintingRectification(object):
         bl = approx_corners[np.argmin(diff)] # bottom left point
         tr = approx_corners[np.argmax(diff)] # top right point
         
-        #print('\nAll the corner points are: ' + str([tl,bl,br,tr]))
         return [tl,bl,br,tr]
 
     def find_edges(self, image): 
@@ -71,37 +70,18 @@ class PaintingRectification(object):
         
         return approx_corners
 
-    def perspective_correction(self, image, bbox):
-        """
-        Function that call the rectification of a single image 
-        and divide the list of bounding boxes.
-        
-        Keyword arguments: 
-            image: frame in RGB space
-            bbox: (list): list of bounding boxes, each bounding box is a [x, y, w, h]
-        Returns: 
-            images (list): list of rectified image 
-        """
-
-        for coordiante in bbox:
-            img = self.rectification(rectification(image, coordinate))
-            images.append(img)
-        return images
-
-    def rectification(self, image, coord):
+    def rectification(self, img):
         """
         Function to implement the rectification of an image. The formuls were taken by a paper 
         on the web. Link: https://www.microsoft.com/en-us/research/publication/whiteboard-scanning-image-enhancement/?from=http%3A%2F%2
         Fresearch.microsoft.com%2Fen-us%2Fum%2Fpeople%2Fzhang%2Fpapers%2Ftr03-39.pdf
         
         Keyword arguments: 
-            image: frame in RGB space
+            img: frame in RGB space
             coord: 4 coordinates of each bounding box            
         Returns: 
-            image: rectified image in RGB space
+            rectified_image: rectified image in RGB space
         """
-        x,y,w,h = coord
-        img = image[y:y+h,x:x+w,:]
         print(f"IMAGE SHAPE: {img.shape}")
         (rows, cols, _) = img.shape
         u0 = (cols)/2.0
@@ -120,57 +100,61 @@ class PaintingRectification(object):
         show_image(img) 
         """
         #widths and heights of the projected image
-        w1 = scipy.spatial.distance.euclidean(tl, tr)
-        w2 = scipy.spatial.distance.euclidean(bl, br)
-        h1 = scipy.spatial.distance.euclidean(tl, bl)
-        h2 = scipy.spatial.distance.euclidean(tr, br)
-        w = max(w1,w2)
-        h = max(h1,h2)
-
-        #visible aspect ratio
-        ar_vis = float(w)/float(h)
-
-        #make numpy arrays and append 1 for linear algebra
-        m1 = np.array((tl[0], tl[1],1)).astype('float32')
-        m2 = np.array((tr[0], tr[1],1)).astype('float32')
-        m3 = np.array((bl[0], bl[1],1)).astype('float32')
-        m4 = np.array((br[0], br[1],1)).astype('float32')
-        
-        #calculate the focal distance
-        k2 = np.dot(np.cross(m1,m4),m3) / np.dot(np.cross(m2,m4),m3)
-        k3 = np.dot(np.cross(m1,m4),m2) / np.dot(np.cross(m3,m4),m2)
-        n2 = k2 * m2 - m1
-        n3 = k3 * m3 - m1
-        n21 = n2[0]
-        n22 = n2[1]
-        n23 = n2[2]
-        n31 = n3[0]
-        n32 = n3[1]
-        n33 = n3[2]
         try:
-            f = math.sqrt(np.abs((1.0/(n23*n33)) * 
-            ((n21*n31 - (n21*n33 + n23*n31)*u0 + n23*n33*u0*u0) 
-            + (n22*n32 - (n22*n33+n23*n32)*v0 + n23*n33*v0*v0))))
+            w1 = scipy.spatial.distance.euclidean(tl, tr)
+            w2 = scipy.spatial.distance.euclidean(bl, br)
+            h1 = scipy.spatial.distance.euclidean(tl, bl)
+            h2 = scipy.spatial.distance.euclidean(tr, br)
+            w = max(w1,w2)
+            h = max(h1,h2)
 
-            A = np.array([[f,0,u0], [0,f,v0], [0,0,1]]).astype('float32')
+            #visible aspect ratio
+            ar_vis = float(w)/float(h)
 
-            At = np.transpose(A)
-            Ati = np.linalg.inv(At)
-            Ai = np.linalg.inv(A)
-            #calculate the real aspect ratio
-            ar_real = math.sqrt(np.dot(np.dot(np.dot(n2,Ati),Ai),n2)
-                /np.dot(np.dot(np.dot(n3,Ati),Ai),n3))
-            if ar_real < ar_vis:
-                W = int(w)
-                H = int(float(W / ar_real))       
-            else:
+            #make numpy arrays and append 1 for linear algebra
+            m1 = np.array((tl[0], tl[1],1)).astype('float32')
+            m2 = np.array((tr[0], tr[1],1)).astype('float32')
+            m3 = np.array((bl[0], bl[1],1)).astype('float32')
+            m4 = np.array((br[0], br[1],1)).astype('float32')
+            
+            #calculate the focal distance
+            k2 = np.dot(np.cross(m1,m4),m3) / np.dot(np.cross(m2,m4),m3)
+            k3 = np.dot(np.cross(m1,m4),m2) / np.dot(np.cross(m3,m4),m2)
+            n2 = k2 * m2 - m1
+            n3 = k3 * m3 - m1
+            n21 = n2[0]
+            n22 = n2[1]
+            n23 = n2[2]
+            n31 = n3[0]
+            n32 = n3[1]
+            n33 = n3[2]
+
+            try:
+                f = math.sqrt(np.abs((1.0/(n23*n33)) * 
+                ((n21*n31 - (n21*n33 + n23*n31)*u0 + n23*n33*u0*u0) 
+                + (n22*n32 - (n22*n33+n23*n32)*v0 + n23*n33*v0*v0))))
+
+                A = np.array([[f,0,u0], [0,f,v0], [0,0,1]]).astype('float32')
+
+                At = np.transpose(A)
+                Ati = np.linalg.inv(At)
+                Ai = np.linalg.inv(A)
+                #calculate the real aspect ratio
+                ar_real = math.sqrt(np.dot(np.dot(np.dot(n2,Ati),Ai),n2)
+                    /np.dot(np.dot(np.dot(n3,Ati),Ai),n3))
+                if ar_real < ar_vis:
+                    W = int(w)
+                    H = int(float(W / ar_real))       
+                else:
+                    H = int(h)
+                    W = int(ar_real * H)
+            except Exception:
+                ar_real = ar_vis
                 H = int(h)
                 W = int(ar_real * H)
         except Exception:
-            ar_real = ar_vis
-            H = int(h)
-            W = int(ar_real * H)
-            
+            W = img.shape[0]
+            H = img.shape[1]
         pts1 = np.array([tl, tr, bl, br]).astype('float32')
         pts2 = np.float32([[0,0],[W,0],[0,H],[W,H]])
         #project the image with the new w/h
@@ -179,3 +163,27 @@ class PaintingRectification(object):
         rectified_image = exposure.rescale_intensity(dst, out_range = (0, 255))
         
         return rectified_image
+
+    def perspective_correction(self, image, bbox):
+        """
+        Function that call the rectification of a single image 
+        and divide the list of bounding boxes.
+        
+        Keyword arguments: 
+            image: frame in RGB space
+            bbox: (list): list of bounding boxes, each bounding box is a [x, y, w, h]
+        Returns: 
+            images (list): list of rectified image 
+        """
+        images = []
+        for coordinate in bbox:
+            print(f"COORDINATE: {coordinate}")
+            x,y,w,h = coordinate
+            img = image[y:y+h,x:x+w,:]
+            try:
+                img_pers = self.rectification(self.rectification(img))
+                images.append(img_pers)
+                print("New image")
+            except Exception:
+                print("ERROR: rectification not working correctly")
+        return images
