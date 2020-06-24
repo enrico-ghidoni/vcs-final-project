@@ -2,7 +2,6 @@ import imutils
 import cv2
 import numpy as np
 from skimage import exposure
-import matplotlib.pyplot as plt
 import math
 import scipy.spatial.distance
 #import the necessary library :)
@@ -14,6 +13,7 @@ class PaintingRectification(object):
     def find_4corners(self, approx_corners):
         """
         Function able to find the 4 external corners in a set of points.
+        
         Keyword arguments: 
             approx_corners (list): list of points
         Return: 
@@ -41,10 +41,10 @@ class PaintingRectification(object):
         #print('\nAll the corner points are: ' + str([tl,bl,br,tr]))
         return [tl,bl,br,tr]
 
-    def find_edges(self, image):
-        
+    def find_edges(self, image): 
         """
         Function to find the edges of an image
+       
         Keyword arguments: 
             image: simple image
         Return: 
@@ -73,16 +73,34 @@ class PaintingRectification(object):
 
     def perspective_correction(self, image, bbox):
         """
-        Function to implement the rectification of an image. The formula was taken by a paper 
-        on the web. Link: https://www.microsoft.com/en-us/research/publication/whiteboard-scanning-image-enhancement/?from=http%3A%2F%2
-        Fresearch.microsoft.com%2Fen-us%2Fum%2Fpeople%2Fzhang%2Fpapers%2Ftr03-39.pdf
+        Function that call the rectification of a single image 
+        and divide the list of bounding boxes.
+        
         Keyword arguments: 
             image: frame in RGB space
             bbox: (list): list of bounding boxes, each bounding box is a [x, y, w, h]
         Returns: 
+            images (list): list of rectified image 
+        """
+
+        for coordiante in bbox:
+            img = self.rectification(rectification(image, coordinate))
+            images.append(img)
+        return images
+
+    def rectification(self, image, coord):
+        """
+        Function to implement the rectification of an image. The formuls were taken by a paper 
+        on the web. Link: https://www.microsoft.com/en-us/research/publication/whiteboard-scanning-image-enhancement/?from=http%3A%2F%2
+        Fresearch.microsoft.com%2Fen-us%2Fum%2Fpeople%2Fzhang%2Fpapers%2Ftr03-39.pdf
+        
+        Keyword arguments: 
+            image: frame in RGB space
+            coord: 4 coordinates of each bounding box            
+        Returns: 
             image: rectified image in RGB space
         """
-        x,y,w,h = bbox
+        x,y,w,h = coord
         img = image[y:y+h,x:x+w,:]
         print(f"IMAGE SHAPE: {img.shape}")
         (rows, cols, _) = img.shape
@@ -90,8 +108,8 @@ class PaintingRectification(object):
         v0 = (rows)/2.0
 
         #detected corners on the original image
-        approx_corners = find_edges(img)
-        tl, bl, br, tr = find_4corners(approx_corners)
+        approx_corners = self.find_edges(img)
+        tl, bl, br, tr = self.find_4corners(approx_corners)
         print("CORNERS:" + str([tl,bl,br,tr]))
         """
         # TESTING: drawing all the corner points in the image
