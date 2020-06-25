@@ -6,7 +6,6 @@ import time
 import argparse
 import csv
 import json
-from numpy import var
 
 
 PAINTINGS_CSV = 'data/data.csv'
@@ -79,7 +78,6 @@ def draw_matches(query_image, images_matched, num_kp_matched, accurate):
         plt.axis('off')
         plt.imshow(images_matched[i].image)
     plt.show()
-
 
 
 def arg_parse():
@@ -175,7 +173,7 @@ class Retrieval:
         else:
             return True
 
-    def retrieve_image(self, image, n_matches=10, save_findings=True, show=False):
+    def retrieve_image(self, image, n_matches=10, save_findings=False, show=False):
         if filename.endswith('png'):
 
             start = time.time()
@@ -204,7 +202,10 @@ class Retrieval:
         else:
             print('format error')
             return None
-        return None
+        if accurate:
+            return [f.get_json() for f in findings]
+        else:
+            return None
 
 
 if __name__ == '__main__':
