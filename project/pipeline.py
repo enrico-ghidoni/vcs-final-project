@@ -33,6 +33,8 @@ def main(video, output_path, onein, debug = False, silent = False):
     images_rectified = []
     print(f'Pipeline starting with video {video}')
 
+    Path(output_path).mkdir(parents=True, exist_ok=True)
+
     cap = cv2.VideoCapture(video)
     while cap.isOpened():
         ret, frame = cap.read()
@@ -41,7 +43,11 @@ def main(video, output_path, onein, debug = False, silent = False):
             print(f'Starting painting detection')
             bounding_boxes_acc[frame_count] = []
             bounding_boxes = painting_detection.detect_paintings(frame)
-            images_rectified.append(persp.perspective_correction(frame, bounding_boxes))
+            # TODO: decidere se lasciare i for all'interno di perspective correction e retrieval o esplodere le bounding boxes prima dei due passaggi
+            ims_rectified = persp.perspective_correction(frame, bounding_boxes)
+            for i, im_rectified in enumerate(ims_rectified):
+                print(cv2.imwrite(f'{output_path}/{frame_count}-{i}.png', im_rectified))
+            images_rectified.append(ims_rectified)
             bounding_boxes_acc[frame_count] = bounding_boxes
         if not ret:
             break
@@ -49,7 +55,6 @@ def main(video, output_path, onein, debug = False, silent = False):
     cap.release()
     cv2.destroyAllWindows()
 
-    Path(output_path).mkdir(parents=True, exist_ok=True)
     painting_detection_out = os.path.join(output_path, 'painting-detection.json')
     with open(painting_detection_out, 'w') as pd_out:
         json.dump(bounding_boxes_acc, pd_out)

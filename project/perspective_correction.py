@@ -161,7 +161,7 @@ class PaintingRectification(object):
         M = cv2.getPerspectiveTransform(pts1,pts2)
         dst = cv2.warpPerspective(img, M, (W,H))
         rectified_image = exposure.rescale_intensity(dst, out_range = (0, 255))
-        
+
         return rectified_image
 
     def perspective_correction(self, image, bbox):
@@ -181,7 +181,8 @@ class PaintingRectification(object):
             x,y,w,h = coordinate
             img = image[y:y+h,x:x+w,:]
             try:
-                img_pers = self.rectification(self.rectification(img))
+                img_pers = self.rectification(img)
+                W, H = img_pers.shape[0], img_pers.shape[1]
                 images.append(img_pers)
                 print("New image")
             except Exception:
