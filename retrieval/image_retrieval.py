@@ -6,13 +6,14 @@ import time
 import argparse
 import csv
 import json
+from numpy import var
 
 
 PAINTINGS_CSV = 'data/data.csv'
 # using Hamming distance
 NORM = cv2.NORM_HAMMING
 BF = cv2.BFMatcher(NORM, crossCheck=True)
-ORB = cv2.ORB_create(500, 1.3)
+ORB = cv2.ORB_create(500, 1.25)
 
 
 class Image:
@@ -22,6 +23,7 @@ class Image:
         self.descriptors = descriptors
         self.keypoints = keypoints
         self.matches = None
+        self.distance = 0   # similarity distance from the frame
         self.title = ''
         self.author = ''
         self.room = ''
@@ -83,17 +85,17 @@ def nearest_neighbors(query_image, reference_paintings, n_paintings):
         image.matches = sorted(matches, key = lambda x: x.distance)
         paintings.append(image)
     # compute for each set of matches the avg 'divergence' to the query one
-    avg_distances = [(np.mean([match.distance for match in p.matches]), p) for p in paintings]
-    avg_distances = sorted(avg_distances, key=lambda x: x[0])
-    top_results = [x[1] for x in avg_distances[0:n_paintings]]
+    for p in paintings:
+        p.distance = np.mean([match.distance for match in p.matches])
+    sorted_paintings = sorted(paintings, key=lambda x: x.distance)
     # update best matches on query image
-    matches = BF.match(query_image.descriptors, top_results[0].descriptors)
+    matches = BF.match(query_image.descriptors, sorted_paintings[0].descriptors)
     query_image.matches = sorted(matches, key=lambda x: x.distance)
     # return a list of paintings sorted by distance from the query one
-    return [x[1] for x in avg_distances[0:n_paintings]]
+    return sorted_paintings[0:n_paintings]
 
 
-def draw_matches(query_image, images_matched, num_kp_matched):
+def draw_matches(query_image, images_matched, num_kp_matched, accurate):
     """
     Plot both the most similar image found in the db with the corresponding
     keypoints matching and all the 10 most similar images
@@ -103,21 +105,11 @@ def draw_matches(query_image, images_matched, num_kp_matched):
     """
 
     # Show top num_kp_matched matches
-    plt.title(f'Best match: {images_matched[0].title}')
+    title_obj = plt.title(f'Best match: {images_matched[0].title}')
+    plt.setp(title_obj, color='g') if accurate else plt.setp(title_obj, color='r')
+    print(f'Best match: {images_matched[0].title}, distance: {images_matched[0].distance}')
+    print(f'accurate: {accurate}')
     plt.axis('off')
-    """
-    cv::drawMatches (
-    InputArray img1,
-    const std::vector< KeyPoint > &keypoints1,
-    InputArray img2,
-    const std::vector< KeyPoint > &keypoints2,
-    const std::vector< DMatch > &matches1to2,
-    InputOutputArray outImg,
-    const Scalar &matchColor=Scalar::all(-1),
-    const Scalar &singlePointColor=Scalar::all(-1),
-    const std::vector< char > &matchesMask=std::vector< char >(),
-    DrawMatchesFlags flags=DrawMatchesFlags::DEFAULT)
-    """
 
     img_matches = cv2.drawMatches(query_image.image, query_image.keypoints, images_matched[0].image,
                                   images_matched[0].keypoints,
@@ -131,6 +123,8 @@ def draw_matches(query_image, images_matched, num_kp_matched):
     for i, im in enumerate(images_matched):
         fig.add_subplot(5, 2, i + 1)
         plt.title(f"#{i+1}: {im.title}")
+        plt.setp(title_obj, color='g') if accurate else plt.setp(title_obj, color='r')
+        print(f"#{i+1}: {im.title}, distance: {im.distance}")
         plt.axis('off')
         plt.imshow(images_matched[i].image)
     plt.show()
@@ -145,6 +139,15 @@ def check_paths(source, findings):
             os.mkdir(findings)
 
 
+def is_accurate(paintings):
+    distances = [p.distance for p in paintings[:10]]
+    var = max(distances) - min(distances)
+    if var < 6: # empirical parameter
+        return False
+    else:
+        return True
+
+
 def arg_parse():
     """
     Parse arguements to the detect module
@@ -156,13 +159,13 @@ def arg_parse():
     parser.add_argument("--database", dest='paintings', help="PaintingsDB / Directory containing all the painting",
                         default="data/paintings_db", type=str)
     parser.add_argument("--source", dest='source', help="Source of the query images",
-                        default="data/Rectified", type=str)
+                        default="data/Rectified-video", type=str)
     parser.add_argument("--findings", dest='findings', help="Image-matchings / "
                                                             "Directory to store the frame with the corresponding "
                                                             "sorted paintings retrieved",
                         default="data/findings", type=str)
-    parser.add_argument("--save", dest="save_findings", help="Do you want to save the results?", default=True)
-    parser.add_argument("--show", dest="show", help="Do you want to show the results?", default=False)
+    parser.add_argument("--save", dest="save_findings", help="Do you want to save the results?", default=False)
+    parser.add_argument("--show", dest="show", help="Do you want to show the results?", default=True)
     parser.add_argument("--n_paintings", dest="n_paintings", help="Number of retrieved paintings saved", default=10)
     parser.add_argument("--n_matches", dest="n_matches", help="Number of matches between the query image and the best "
                                                               "image retrieved shown", default=10)
@@ -187,6 +190,7 @@ if __name__ == '__main__':
             query_image = Image('query_image', im, descr, kp)
             # findings is an array of Images
             findings = nearest_neighbors(query_image, paintings, args.n_matches)
+            accurate = is_accurate(findings)
             end = time.time()
             print(f'operation took: {end - start}s')
             if args.save_findings:
@@ -194,8 +198,9 @@ if __name__ == '__main__':
                 finding['frame'] = filename
                 json_findings = [f.get_json() for f in findings]
                 finding['paintings'] = json_findings
+                finding['accurate'] = accurate
                 with open(f'{args.findings}/findings.json', 'w+') as outfile:
                     json.dump(finding, outfile)
             if args.show:
-                draw_matches(query_image, findings, args.n_matches)
+                draw_matches(query_image, findings, args.n_matches, accurate)
 
