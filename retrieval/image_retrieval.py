@@ -107,10 +107,10 @@ def arg_parse():
 
 
 class Retrieval:
-    def __init__(self, paintings_db, findings_dir):
+    def __init__(self, paintings_db):
         orb = cv2.ORB_create(500, 1.25)
         self.paintings = self.__get_paintings__(orb, paintings_db)
-        self.findings_dir = findings_dir
+        self.findings_dir = args.findings
 
     def __compute_kp_descr__(self, im, orb):
         # find keypoints and descriptors from an image given a detector
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     print('--- getting descriptors of each painting in the db... ---')
     start = time.time()
 
-    ret = Retrieval(args.paintings, args.findings)
+    ret = Retrieval(args.paintings)
 
     end = time.time()
     print(f'operation took: {end - start}s')
