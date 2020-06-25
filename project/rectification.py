@@ -127,7 +127,6 @@ def perspective_correction(img):
     Keyword arguments: image
     Return: rectified image
     """
-    print(f"IMAGE SHAPE: {img.shape}")
     (rows, cols, _) = img.shape
     u0 = (cols)/2.0
     v0 = (rows)/2.0
@@ -135,6 +134,7 @@ def perspective_correction(img):
     #detected corners on the original image
     approx_corners = find_edges(img)
     tl, bl, br, tr = find_4corners(approx_corners)
+    print("CORNERS:" + str([tl,bl,br,tr]))
     """
     # TESTING: drawing all the corner points in the image
     cv2.putText(img, "LT", tuple(tl), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1, cv2.LINE_AA) 
@@ -171,7 +171,6 @@ def perspective_correction(img):
     n31 = n3[0]
     n32 = n3[1]
     n33 = n3[2]
-    
     try:
         f = math.sqrt(np.abs((1.0/(n23*n33)) * 
         ((n21*n31 - (n21*n33 + n23*n31)*u0 + n23*n33*u0*u0) 
@@ -200,7 +199,7 @@ def perspective_correction(img):
     pts2 = np.float32([[0,0],[W,0],[0,H],[W,H]])
     #project the image with the new w/h
     M = cv2.getPerspectiveTransform(pts1,pts2)
-    dst = cv2.warpPerspective(img,M,(W,H))
+    dst = cv2.warpPerspective(img, M, (W,H))
+    rectified_image = dst
     rectified_image = exposure.rescale_intensity(dst, out_range = (0, 255))
-    
     return rectified_image
