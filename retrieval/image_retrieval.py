@@ -108,7 +108,6 @@ class Retrieval:
     def __init__(self, paintings_db):
         orb = cv2.ORB_create(500, 1.25)
         self.paintings = self.__get_paintings__(orb, paintings_db)
-        self.findings_dir = args.findings
 
     def __compute_kp_descr__(self, im, orb):
         # find keypoints and descriptors from an image given a detector
@@ -173,7 +172,7 @@ class Retrieval:
         else:
             return True
 
-    def retrieve_image(self, image, n_matches=10, save_findings=False, show=False):
+    def retrieve_image(self, image, n_matches=10, save_findings=False, show=False, findings_dir='data/findings'):
         if filename.endswith('png'):
 
             start = time.time()
@@ -195,7 +194,7 @@ class Retrieval:
                 json_findings = [f.get_json() for f in findings]
                 finding['paintings'] = json_findings
                 finding['accurate'] = accurate
-                with open(f'{self.findings_dir}/findings.json', 'w+') as outfile:
+                with open(f'{findings_dir}/findings.json', 'w+') as outfile:
                     json.dump(finding, outfile)
             if show:
                 draw_matches(query_image, findings, n_matches, accurate)
