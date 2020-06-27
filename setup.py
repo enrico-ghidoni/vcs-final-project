@@ -9,7 +9,7 @@ setup(
     description='UNIMORE Vision and Cognitive Systems A.A. 2019-2020 Final Project',
     entry_points={
         'console_scripts': [
-            'pipeline=progetto.pipeline:pipeline_entry_point'
+            'pipeline=project.pipeline:console_entry_point'
         ]
     }
 )

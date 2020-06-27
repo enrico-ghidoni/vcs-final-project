@@ -180,8 +180,6 @@ class Retrieval:
             else:
                 return False
         """
-        print(dist_best_one)
-        print(paintings)
         if dist_best_one[2] <= 30 and paintings[0].title != "Ritratto d'uomo":
             if distances[0] > 65:
                 return False
@@ -195,7 +193,7 @@ class Retrieval:
 
         # compute the descr and the kp of the image and save it as Image class
         kp, descr = self.__compute_kp_descr__(image)
-        if not kp:
+        if not kp or len(kp) < 10:
             return None
         query_image = Image('query_image', image, descr, kp)
 
