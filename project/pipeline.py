@@ -5,7 +5,6 @@ import perspective_correction
 import os
 import json
 from main import saveImg
-
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -58,7 +57,7 @@ def main(video, output_path, onein, debug = False, silent = False):
     painting_detection_out = os.path.join(output_path, 'painting-detection.json')
     with open(painting_detection_out, 'w') as pd_out:
         json.dump(bounding_boxes_acc, pd_out)
-    
+
 def pipeline_entry_point():
     """Console entry point."""
 
