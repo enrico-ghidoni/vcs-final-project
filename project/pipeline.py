@@ -1,10 +1,9 @@
 import argparse
 import cv2
-import detection 
+import detection
 import perspective_correction
 import os
 import json
-from main import saveImg
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
