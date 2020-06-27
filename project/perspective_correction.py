@@ -182,8 +182,9 @@ class PaintingRectification(object):
             img = image[y:y+h,x:x+w,:]
             try:
                 img_pers = self.rectification(img)
+                im_uint8 = cv2.normalize(src=img_pers, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
                 W, H = img_pers.shape[0], img_pers.shape[1]
-                images.append(img_pers)
+                images.append(im_uint8)
                 print("New image")
             except Exception:
                 print("ERROR: rectification not working correctly")

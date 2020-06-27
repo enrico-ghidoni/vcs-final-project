@@ -2,6 +2,7 @@ import argparse
 import cv2
 import detection
 import perspective_correction
+import image_retrieval
 import os
 import json
 from pathlib import Path
@@ -9,6 +10,10 @@ from pathlib import Path
 parser = argparse.ArgumentParser()
 parser.add_argument('--video',
                     help='Absolute path for video file to process.')
+parser.add_argument('--paintings-db',
+                    help='Absolute path for paintings db directory.')
+parser.add_argument('--paintings-csv',
+                    help='Absolute path for data.csv file.')
 parser.add_argument('--output-path',
                     help='Absolute path to store pipeline process results.')
 parser.add_argument('--onein',
@@ -23,12 +28,13 @@ parser.add_argument('--silent',
                     action='store_true')
 
 
-def main(video, output_path, onein, debug = False, silent = False):
+def main(video, paintings_db, paintings_csv, output_path, onein, debug = False, silent = False):
     frame_count = 0
     bounding_boxes_acc = {}
+    images_rectified = {}
     painting_detection = detection.PaintingDetection()
     persp = perspective_correction.PaintingRectification()
-    images_rectified = []
+    retrieval = image_retrieval.Retrieval(paintings_db, paintings_csv)
     print(f'Pipeline starting with video {video}')
 
     Path(output_path).mkdir(parents=True, exist_ok=True)
@@ -39,13 +45,13 @@ def main(video, output_path, onein, debug = False, silent = False):
         frame_count += 1
         if frame_count % onein == 0 and ret:
             print(f'Starting painting detection')
-            bounding_boxes_acc[frame_count] = []
             bounding_boxes = painting_detection.detect_paintings(frame)
-            # TODO: decidere se lasciare i for all'interno di perspective correction e retrieval o esplodere le bounding boxes prima dei due passaggi
             ims_rectified = persp.perspective_correction(frame, bounding_boxes)
             for i, im_rectified in enumerate(ims_rectified):
                 print(cv2.imwrite(f'{output_path}/{frame_count}-{i}.png', im_rectified))
-            images_rectified.append(ims_rectified)
+                im_matches = retrieval.retrieve_image(im_rectified)
+                print(im_matches)
+            images_rectified[frame_count] = ims_rectified
             bounding_boxes_acc[frame_count] = bounding_boxes
         if not ret:
             break

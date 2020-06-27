@@ -100,12 +100,11 @@ def arg_parse():
 
 
 class Retrieval:
-    paintings_csv = 'data/data.csv'
-    # using Hamming distance
-    BF = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-    ORB = cv2.ORB_create(500, 1.25)
-
-    def __init__(self, paintings_db):
+    def __init__(self, paintings_db, paintings_csv):
+        # using Hamming distance
+        self.BF = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        self.ORB = cv2.ORB_create(500, 1.25)
+        self.paintings_csv = paintings_csv
         self.paintings = self.__get_paintings__(paintings_db)
 
     def __compute_kp_descr__(self, im):
@@ -181,6 +180,8 @@ class Retrieval:
             else:
                 return False
         """
+        print(dist_best_one)
+        print(paintings)
         if dist_best_one[2] <= 30 and paintings[0].title != "Ritratto d'uomo":
             if distances[0] > 65:
                 return False
