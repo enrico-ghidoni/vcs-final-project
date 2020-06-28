@@ -7,6 +7,7 @@ import os
 import json
 from pathlib import Path
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--video',
                     help='Absolute path for video file to process.')
@@ -39,6 +40,7 @@ class Pipeline(object):
         self._detection = detection.PaintingDetection()
         self._rectification = perspective_correction.PaintingRectification()
         self._retrieval = image_retrieval.Retrieval(paintings_db, paintings_csv)
+
 
         # create output path if doesn't already exist
         Path(output_path).mkdir(parents=True, exist_ok=True)
