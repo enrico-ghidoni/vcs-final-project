@@ -3,6 +3,7 @@ import cv2
 import project.detection as detection
 import project.perspective_correction as perspective_correction
 import project.image_retrieval as image_retrieval
+import project.people_det as people_detection
 import os
 import json
 from pathlib import Path
@@ -15,6 +16,9 @@ parser.add_argument('--paintings-db',
                     help='Absolute path for paintings db directory.')
 parser.add_argument('--paintings-csv',
                     help='Absolute path for data.csv file.')
+parser.add_argument('--config_people_detection',
+                    help='Absolute path for people detection config dir.',
+                    default='../project/people_det_config')
 parser.add_argument('--output-path',
                     help='Absolute path to store pipeline process results.')
 parser.add_argument('--onein',
@@ -30,7 +34,8 @@ parser.add_argument('--silent',
 
 
 class Pipeline(object):
-    def __init__(self, video, paintings_db, paintings_csv, output_path, onein, debug = False, silent = False):
+    def __init__(self, video, paintings_db, paintings_csv, output_path, config_people_detection,
+                 onein, debug=False, silent=False):
         self._video = video
         self._output_path = output_path
         self._onein = onein
@@ -40,7 +45,7 @@ class Pipeline(object):
         self._detection = detection.PaintingDetection()
         self._rectification = perspective_correction.PaintingRectification()
         self._retrieval = image_retrieval.Retrieval(paintings_db, paintings_csv)
-
+        self._people_det = people_detection.PeopleDetector(config_people_detection)
 
         # create output path if doesn't already exist
         Path(output_path).mkdir(parents=True, exist_ok=True)
@@ -90,6 +95,8 @@ class Pipeline(object):
             self._ims_rectified[self._cur_frame] = self.frame_ims_rectified
             self._ims_match[self._cur_frame] = self.frame_ims_matches
 
+            bb_of_people_detection = self._people_det.detect(self._cur_frame)
+
         return True
 
     def stop(self):
@@ -126,6 +133,7 @@ def console_entry_point():
 
     pipe = Pipeline(**args.__dict__)
     pipe.autoplay()
+
 
 if __name__ == '__main__':
     console_entry_point()
