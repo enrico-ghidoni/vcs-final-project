@@ -1,5 +1,6 @@
 import argparse
 import cv2
+import numpy as np
 import project.detection as detection
 import project.perspective_correction as perspective_correction
 import project.image_retrieval as image_retrieval
@@ -78,6 +79,7 @@ class Pipeline(object):
         if not ret:
             return False
         if ret and self._cur_frame % self._onein == 0:
+            self.frame = frame
             self.frame_bounding_boxes = self._detection.detect_paintings(frame)
             self.frame_ims_rectified = self._rectification.perspective_correction(frame, self.frame_bounding_boxes)
             self.frame_ims_matches = []
@@ -113,6 +115,29 @@ class Pipeline(object):
             pass
         self.stop()
         self.save_outputs()
+
+    @property
+    def image_matching_bounding(self):
+        image = np.copy(self.frame)
+        thickness = 3
+        if self.frame_bounding_boxes:
+            for i, box in enumerate(self.frame_bounding_boxes):
+                if self.frame_ims_matches[i]:
+                    color = (0, 255, 0)
+                    text = self.frame_ims_matches[i][0]['title']
+                else:
+                    color = (0, 0 , 255)
+                    text = 'No match'
+
+                x, y, w, h = box
+                ulx, uly = x, y
+                brx, bry = x + w, y + h
+                label_point = (ulx + thickness, uly + h - thickness)
+
+                cv2.rectangle(image, (ulx, uly), (brx, bry), color, thickness)
+                cv2.putText(image, text, label_point, cv2.FONT_HERSHEY_DUPLEX, 0.7, color, 1)
+
+        return image
 
     def _read_next_frame(self):
         self._cur_frame += 1
