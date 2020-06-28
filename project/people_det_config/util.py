@@ -208,7 +208,12 @@ def write_results(prediction, confidence, num_classes, nms_conf = 0.4):
 
 
 def letterbox_image(img, inp_dim):
-    '''resize image with unchanged aspect ratio using padding'''
+    """
+    resize image with unchanged aspect ratio using padding
+    :param img:
+    :param inp_dim:
+    :return:
+    """
     img_w, img_h = img.shape[1], img.shape[0]
     w, h = inp_dim
     new_w = int(img_w * min(w/img_w, h/img_h))
