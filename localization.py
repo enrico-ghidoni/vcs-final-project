@@ -4,13 +4,13 @@ import json
 import sys
 import csv
 
-path_data = r"C:\Users\simof\project_vision\rectification\data.csv"
-path_rooms = r"C:\Users\simof\project_vision\rectification\rooms.json"
+
 
 class PeopleLocalization(object):
 
     def __init__(self):
         self.room = 0
+        self.path_data = r"C:\Users\simof\project_vision\rectification\data.csv"
 
     def openCSV(self, path):    
         try:
@@ -31,25 +31,16 @@ class PeopleLocalization(object):
 
     def assign_rooms(self, frame_num, image_name):
 
-        csv_file = self.openCSV(path_data)
-        for image in csv_file:
-            if image[0] == image_name:
-                room = image[2]
-        f = open(path_rooms,'r+')
         try:
-            data = json.load(f)        
+            csv_file = self.openCSV(self.path_data)
+            for image in csv_file:
+                if image[0] == image_name:
+                    room = image[2]
+
+            return int(room)    
         except Exception:
-            data = {}
-            data[frame_num] = int(room)
-            
-        if data:
-            if str(frame_num) not in data:
-                data[frame_num] = int(room)
-            f.seek(0)
-            json.dump(data, f)  
-            return int(room)
-        return 0   
-    
+            return 0
+        
     def people_localization(self, frame, frame_num, bbox, image_name):
 
         room = self.assign_rooms(frame_num,image_name)
