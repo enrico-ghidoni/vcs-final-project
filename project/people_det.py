@@ -141,26 +141,26 @@ class PeopleDetector:
         :return: the found bounding boxes, the
         """
 
-        img, orig_im, dim = self.__prepare_input__(frame, pd.inp_dim)
+        img, orig_im, dim = self.__prepare_input__(frame, self.inp_dim)
 
         im_dim = torch.FloatTensor(dim).repeat(1, 2)
 
-        if pd.CUDA:
+        if self.CUDA:
             im_dim = im_dim.cuda()
             img = img.cuda()
 
         with torch.no_grad():
-            prediction = self.model(Variable(img), pd.CUDA)
+            prediction = self.model(Variable(img), self.CUDA)
         output = write_results(prediction, self.confidence, self.num_classes, nms_conf=self.nms_thesh)
 
         if type(output) == int:
             return None
 
         im_dim = im_dim.repeat(output.size(0), 1)
-        scaling_factor = torch.min(pd.inp_dim / im_dim, 1)[0].view(-1, 1)
+        scaling_factor = torch.min(self.inp_dim / im_dim, 1)[0].view(-1, 1)
 
-        output[:, [1, 3]] -= (pd.inp_dim - scaling_factor * im_dim[:, 0].view(-1, 1)) / 2
-        output[:, [2, 4]] -= (pd.inp_dim - scaling_factor * im_dim[:, 1].view(-1, 1)) / 2
+        output[:, [1, 3]] -= (self.inp_dim - scaling_factor * im_dim[:, 0].view(-1, 1)) / 2
+        output[:, [2, 4]] -= (self.inp_dim - scaling_factor * im_dim[:, 1].view(-1, 1)) / 2
 
         output[:, 1:5] /= scaling_factor
 
