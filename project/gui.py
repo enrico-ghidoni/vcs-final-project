@@ -22,17 +22,34 @@ class GUIPipeline(object):
         self._pipe = pipeline.Pipeline(values['-video-'], values['-paintingsdb-'], values['-paintingscsv-'], values['-outputpath-'], int(values['-onein-']), debug = False, silent = True)
 
         layout = [[sg.Image(filename='', key='-image-')],
-                    [sg.StatusBar(text='Stopped', auto_size_text=True, key='-status-')]]
-        window = sg.Window('Running', layout)
+                    [sg.StatusBar(text='Stopped', size=(113, 1), key='-status-')]]
+        self._window = sg.Window('Running', layout)
         self._pipe.start()
         while self._pipe.next_frame():
-            event, values = window.read(timeout=15)
-            image = self._pipe.image_matching_bounding
-            imgbytes = cv2.imencode('.png', self._pipe.image_matching_bounding)[1].tobytes()
-            window['-image-'].update(data=imgbytes)
-            window['-status-'].update(f'Running: frame {self._pipe._cur_frame}')
+            event, values = self._window.read(timeout=15)
+
+            self._update_image()
+            self._update_status_bar()
 
         window.close()
+
+    def _update_image(self):
+        image = self._pipe.image_matching_bounding
+        image = cv2.resize(image, (1024, 512))
+        imgbytes = cv2.imencode('.png', image)[1].tobytes()
+
+        self._window['-image-'].update(data=imgbytes)
+
+    def _update_status_bar(self):
+        framen = self._pipe._cur_frame
+        tot_bounding = 0
+        tot_match = 0
+        if self._pipe.frame_bounding_boxes:
+            tot_bounding = len(self._pipe.frame_bounding_boxes)
+            tot_match = sum(match is not None for match in self._pipe.frame_ims_matches)
+        text = f'Running: frame {framen}, detected {tot_bounding} paintings, found {tot_match} matches'
+
+        self._window['-status-'].update(text)
 
 
 def console_entry_point():
