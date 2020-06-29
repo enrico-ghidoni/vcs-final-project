@@ -54,6 +54,10 @@ class Pipeline(object):
         self._detection_out = os.path.join(output_path, 'detection.json')
         self._rectification_out = os.path.join(output_path, 'rectification.json')
         self._retrieval_out = os.path.join(output_path, 'retrieval.json')
+        self._video_out = os.path.join(output_path, 'video.avi')
+
+        self._frame_w = None
+        self._frame_h = None
 
     def start(self):
         self._cap = None
@@ -63,6 +67,7 @@ class Pipeline(object):
         self._ims_rectified = {}
         self._ims_match = {}
         self._ppl_bounding_boxes = {}
+        self._frames_to_save = []
 
         cap = cv2.VideoCapture(self._video)
         if cap.isOpened():
@@ -87,6 +92,9 @@ class Pipeline(object):
         if not ret:
             return False
         if ret and self._cur_frame % self._onein == 0:
+            if self._frame_w is None and self._frame_h is None:
+                self._frame_w = frame.shape[1]
+                self._frame_h = frame.shape[0]
             self.frame = frame
             self.frame_bounding_boxes = self._detection.detect_paintings(frame)
             self.frame_ims_rectified = self._rectification.perspective_correction(frame, self.frame_bounding_boxes)
@@ -102,10 +110,7 @@ class Pipeline(object):
             self._bounding_boxes[self._cur_frame] = self.frame_bounding_boxes
             self._ims_rectified[self._cur_frame] = self.frame_ims_rectified
             self._ims_match[self._cur_frame] = self.frame_ims_matches
-
-            # --- to write all the bb of the people det ---
-            # list(map(lambda x: self._people_det.write(x, frame), bb_of_people_detection))
-            # -----------------------------------------
+            self._frames_to_save.append(self.image_matching_bounding)
 
         return True
 
@@ -121,10 +126,15 @@ class Pipeline(object):
         for frame in self._ims_rectified.keys():
             suffix = f'f_{frame}'
             for i, image in enumerate(self._ims_rectified[frame]):
-                filename = f'{suffix}_{i}_rect.png'
-                path = os.path.join(self._output_path, filename)
-                print(path)
-                cv2.imwrite(path, image)
+                if image is not None:
+                    filename = f'{suffix}_{i}_rect.png'
+                    path = os.path.join(self._output_path, filename)
+                    print(path)
+                    cv2.imwrite(path, image)
+
+        video_writer = cv2.VideoWriter(self._video_out, cv2.VideoWriter_fourcc(*'XVID'), 30, (self._frame_w, self._frame_h))
+        for frame in self._frames_to_save:
+            print(video_writer.write(frame))
 
     def autoplay(self, save_outputs = True):
         self.start()

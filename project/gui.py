@@ -39,6 +39,8 @@ class GUIPipeline(object):
             self._update_image()
             self._update_status_bar()
 
+        self._pipe.save_outputs()
+
         window.close()
 
     def _update_image(self):
