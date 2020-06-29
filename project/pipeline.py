@@ -92,7 +92,10 @@ class Pipeline(object):
             self.frame_ims_rectified = self._rectification.perspective_correction(frame, self.frame_bounding_boxes)
             self.frame_ims_matches = []
             for im_rectified in self.frame_ims_rectified:
-                self.frame_ims_matches.append(self._retrieval.retrieve_image(im_rectified))
+                if im_rectified is not None:
+                    self.frame_ims_matches.append(self._retrieval.retrieve_image(im_rectified))
+                else:
+                    self.frame_ims_matches.append(None)
 
             self.frame_ppl_bounding_boxes = self._people_det.detect(frame)
 
@@ -136,7 +139,7 @@ class Pipeline(object):
         thickness = 3
         if self.frame_bounding_boxes:
             for i, box in enumerate(self.frame_bounding_boxes):
-                if self.frame_ims_matches[i]:
+                if self.frame_ims_matches[i] and self.frame_ims_matches[i] is not None:
                     color = (0, 255, 0)
                     text = self.frame_ims_matches[i][0]['title']
                 else:

@@ -188,6 +188,7 @@ class PaintingRectification(object):
                 ratio = W/H
                 if ratio <1/4 or ratio > 4:
                     print(f"No new image added, ratio {ratio} and size ({W},{H},3)")
+                    images.append(None)
                 else:
                     images.append(im_uint8)
                     print("New image added")
