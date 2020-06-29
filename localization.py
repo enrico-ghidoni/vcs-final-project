@@ -8,9 +8,9 @@ import csv
 
 class PeopleLocalization(object):
 
-    def __init__(self):
+    def __init__(self, path_csv):
         self.room = 0
-        self.path_data = r"C:\Users\simof\project_vision\rectification\data.csv"
+        self.path_data = path_csv
 
     def openCSV(self, path):    
         try:
