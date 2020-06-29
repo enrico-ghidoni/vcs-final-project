@@ -1,8 +1,8 @@
 from __future__ import division
 
 from torch.autograd import Variable
-from project.people_det_config.darknet import Darknet
-from project.people_det_config.util import *
+from people_det_config.darknet import Darknet
+from people_det_config.util import *
 import random
 import pickle as pkl
 import argparse

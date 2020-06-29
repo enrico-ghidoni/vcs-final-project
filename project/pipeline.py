@@ -62,6 +62,7 @@ class Pipeline(object):
         self._bounding_boxes = {}
         self._ims_rectified = {}
         self._ims_match = {}
+        self._ppl_bounding_boxes = {}
 
         cap = cv2.VideoCapture(self._video)
         if cap.isOpened():
@@ -93,14 +94,14 @@ class Pipeline(object):
             for im_rectified in self.frame_ims_rectified:
                 self.frame_ims_matches.append(self._retrieval.retrieve_image(im_rectified))
 
+            self.frame_ppl_bounding_boxes = self._people_det.detect(frame)
+
             self._bounding_boxes[self._cur_frame] = self.frame_bounding_boxes
             self._ims_rectified[self._cur_frame] = self.frame_ims_rectified
             self._ims_match[self._cur_frame] = self.frame_ims_matches
 
-            bb_of_people_detection = self._people_det.detect(frame)
-
             # --- to write all the bb of the people det ---
-            list(map(lambda x: self._people_det.write(x, frame), bb_of_people_detection))
+            # list(map(lambda x: self._people_det.write(x, frame), bb_of_people_detection))
             # -----------------------------------------
 
         return True
@@ -149,6 +150,10 @@ class Pipeline(object):
 
                 cv2.rectangle(image, (ulx, uly), (brx, bry), color, thickness)
                 cv2.putText(image, text, label_point, cv2.FONT_HERSHEY_DUPLEX, 0.7, color, 1)
+        if self.frame_ppl_bounding_boxes is not None:
+            color = (255, 0, 0)
+            for tensor in self.frame_ppl_bounding_boxes:
+                self._people_det.write(tensor, image)
 
         return image
 

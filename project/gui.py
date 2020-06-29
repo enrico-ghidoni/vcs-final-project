@@ -52,10 +52,13 @@ class GUIPipeline(object):
         framen = self._pipe._cur_frame
         tot_bounding = 0
         tot_match = 0
+        ppl_found = 0
         if self._pipe.frame_bounding_boxes:
             tot_bounding = len(self._pipe.frame_bounding_boxes)
             tot_match = sum(match is not None for match in self._pipe.frame_ims_matches)
-        text = f'Running: frame {framen}, detected {tot_bounding} paintings, found {tot_match} matches'
+        if self._pipe.frame_ppl_bounding_boxes is not None:
+            ppl_found = sum(person is not None for person in self._pipe.frame_ppl_bounding_boxes)
+        text = f'Running: frame {framen}, detected {tot_bounding} paintings, found {tot_match} matches, detected {ppl_found} persons'
 
         self._window['-status-'].update(text)
 
