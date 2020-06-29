@@ -11,20 +11,24 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--video',
-                    help='Absolute path for video file to process.')
+                    help='Absolute path for video file to process.',
+                    default='../data/Video Images/prova4.mp4')
 parser.add_argument('--paintings-db',
-                    help='Absolute path for paintings db directory.')
+                    help='Absolute path for paintings db directory.',
+                    default='../data/paintings_db')
 parser.add_argument('--paintings-csv',
-                    help='Absolute path for data.csv file.')
+                    help='Absolute path for data.csv file.',
+                    default='../data/data.csv')
 parser.add_argument('--config_people_detection',
                     help='Absolute path for people detection config dir.',
                     default='../project/people_det_config')
 parser.add_argument('--output-path',
-                    help='Absolute path to store pipeline process results.')
+                    help='Absolute path to store pipeline process results.',
+                    default='findings')
 parser.add_argument('--onein',
                     help='Evaluate one frame every N frames in the video.',
                     type=int,
-                    default=1)
+                    default=10)
 parser.add_argument('--debug',
                     help='Show detailed comparison of image processing.',
                     action='store_true')
@@ -95,7 +99,11 @@ class Pipeline(object):
             self._ims_rectified[self._cur_frame] = self.frame_ims_rectified
             self._ims_match[self._cur_frame] = self.frame_ims_matches
 
-            bb_of_people_detection = self._people_det.detect(self._cur_frame)
+            bb_of_people_detection = self._people_det.detect(frame)
+
+            # --- to write all the bb of the people det ---
+            list(map(lambda x: self._people_det.write(x, frame), bb_of_people_detection))
+            # -----------------------------------------
 
         return True
 
