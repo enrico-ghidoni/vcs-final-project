@@ -183,15 +183,8 @@ class PaintingRectification(object):
             try:
                 img_pers = self.rectification(img)
                 im_uint8 = cv2.normalize(src=img_pers, dst=None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-                # setting the threshold to delete the "Stick" images
-                W, H = img_pers.shape[0], img_pers.shape[1]
-                ratio = W/H
-                if ratio <1/4 or ratio > 4:
-                    print(f"No new image added, ratio {ratio} and size ({W},{H},3)")
-                    images.append(None)
-                else:
-                    images.append(im_uint8)
-                    print("New image added")
+                images.append(im_uint8)
+                print("New image added")
             except Exception:
                 print("ERROR: rectification not working correctly")
                 images.append(None)
