@@ -12,7 +12,7 @@ from pathlib import Path
 parser = argparse.ArgumentParser()
 parser.add_argument('--video',
                     help='Absolute path for video file to process.',
-                    default='../data/Video Images/prova4.mp4')
+                    default='../data/Video Images/prova3.mp4')
 parser.add_argument('--paintings-db',
                     help='Absolute path for paintings db directory.',
                     default='../data/paintings_db')
@@ -28,7 +28,7 @@ parser.add_argument('--output-path',
 parser.add_argument('--onein',
                     help='Evaluate one frame every N frames in the video.',
                     type=int,
-                    default=10)
+                    default=20)
 parser.add_argument('--debug',
                     help='Show detailed comparison of image processing.',
                     action='store_true')
@@ -93,7 +93,7 @@ class Pipeline(object):
             self.frame_ims_rectified = self._rectification.perspective_correction(frame, self.frame_bounding_boxes)
             self.frame_ims_matches = []
             for im_rectified in self.frame_ims_rectified:
-                self.frame_ims_matches.append(self._retrieval.retrieve_image(im_rectified))
+                self.frame_ims_matches.append(self._retrieval.retrieve_image(im_rectified, show=True))
 
             self._bounding_boxes[self._cur_frame] = self.frame_bounding_boxes
             self._ims_rectified[self._cur_frame] = self.frame_ims_rectified
@@ -102,7 +102,8 @@ class Pipeline(object):
             bb_of_people_detection = self._people_det.detect(frame)
 
             # --- to write all the bb of the people det ---
-            list(map(lambda x: self._people_det.write(x, frame), bb_of_people_detection))
+            if bb_of_people_detection is not None:
+                list(map(lambda x: self._people_det.write(x, frame), bb_of_people_detection))
             # -----------------------------------------
 
         return True
