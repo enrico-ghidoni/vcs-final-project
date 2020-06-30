@@ -113,7 +113,7 @@ class PeopleDetector:
         img_ = torch.from_numpy(img_).float().div(255.0).unsqueeze(0)
         return img_, orig_im, dim
 
-    def write(self, x, img):
+    def write(self, x, img, room = None):
         """
         it writes the bounding boxes on the image for visualization
         :param x: b boxes
@@ -125,7 +125,10 @@ class PeopleDetector:
         cls = int(x[-1])
         # if a class which is not a person is found do nothing
         if cls == 0:
-            label = "{0}".format(self.classes[cls])
+            room_label = 'not detected'
+            if room:
+                room_label = room
+            label = f'Person, room {room_label}'
             color = random.choice(self.colors)
             cv2.rectangle(img, c1, c2, color, 1)
             t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1, 1)[0]

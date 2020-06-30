@@ -194,4 +194,5 @@ class PaintingRectification(object):
                     print("New image added")
             except Exception:
                 print("ERROR: rectification not working correctly")
+                images.append(None)
         return images

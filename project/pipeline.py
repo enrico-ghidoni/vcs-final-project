@@ -1,12 +1,14 @@
 import argparse
 import cv2
 import numpy as np
-import detection as detection
-import perspective_correction as perspective_correction
-import image_retrieval as image_retrieval
-import people_det as people_detection
+import detection
+import perspective_correction
+import image_retrieval
+import people_det
+import localization
 import os
 import json
+import scipy.stats
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -46,7 +48,7 @@ class Pipeline(object):
         self._detection = detection.PaintingDetection()
         self._rectification = perspective_correction.PaintingRectification()
         self._retrieval = image_retrieval.Retrieval(paintings_db, paintings_csv)
-        self._people_det = people_detection.PeopleDetector(config_people_detection)
+        self._people_det = people_det.PeopleDetector(config_people_detection)
 
         # create output path if doesn't already exist
         Path(output_path).mkdir(parents=True, exist_ok=True)
@@ -79,6 +81,9 @@ class Pipeline(object):
         self.frame_bounding_boxes = None
         self.frame_ims_rectified = None
         self.frame_ims_matches = None
+        self.frame_room = None
+
+        rooms = []
 
         if auto_skip:
             if self._cur_frame % self._onein == 0:
@@ -98,14 +103,21 @@ class Pipeline(object):
             self.frame = frame
             self.frame_bounding_boxes = self._detection.detect_paintings(frame)
             self.frame_ims_rectified = self._rectification.perspective_correction(frame, self.frame_bounding_boxes)
+            print(f'DEBUG: bounding boxes {len(self.frame_bounding_boxes)}, ims rectified {len(self.frame_ims_rectified)}')
             self.frame_ims_matches = []
             for im_rectified in self.frame_ims_rectified:
                 if im_rectified is not None:
-                    self.frame_ims_matches.append(self._retrieval.retrieve_image(im_rectified))
+                    painting_match = self._retrieval.retrieve_image(im_rectified)
+                    self.frame_ims_matches.append(painting_match)
+                    if painting_match:
+                        rooms.append(painting_match[0]['room'])
                 else:
                     self.frame_ims_matches.append(None)
 
             self.frame_ppl_bounding_boxes = self._people_det.detect(frame)
+
+            if rooms:
+                self.frame_room = scipy.stats.mode(rooms)[0][0]
 
             self._bounding_boxes[self._cur_frame] = self.frame_bounding_boxes
             self._ims_rectified[self._cur_frame] = self.frame_ims_rectified
@@ -166,7 +178,7 @@ class Pipeline(object):
         if self.frame_ppl_bounding_boxes is not None:
             color = (255, 0, 0)
             for tensor in self.frame_ppl_bounding_boxes:
-                self._people_det.write(tensor, image)
+                self._people_det.write(tensor, image, self.frame_room)
 
         return image
 
