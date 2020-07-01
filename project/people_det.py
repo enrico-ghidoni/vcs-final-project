@@ -1,8 +1,8 @@
 from __future__ import division
 
 from torch.autograd import Variable
-from people_det_config.darknet import Darknet
-from people_det_config.util import *
+from project.people_det_config.darknet import Darknet
+from project.people_det_config.util import *
 import random
 import pickle as pkl
 import argparse
@@ -46,7 +46,7 @@ class PeopleDetector:
     CUDA = torch.cuda.is_available()
 
     def __init__(self, config_dir,
-                 confidence=0.8, nms_thesh=0.5, reso=256):
+                 confidence=0.85, nms_thesh=0.5, reso=256):
 
         print("Checking config dir")
         self.__check_config_dir__(config_dir)
@@ -141,7 +141,7 @@ class PeopleDetector:
         """
         it detects all the people in the given frame
         :param frame:
-        :return: the found bounding boxes, the
+        :return: the found bounding boxes
         """
 
         img, orig_im, dim = self.__prepare_input__(frame, self.inp_dim)

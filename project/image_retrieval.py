@@ -38,6 +38,26 @@ class Image:
         }
 
 
+def adjust_image(img, contrast_factor, brightness_factor=0):
+    """
+    Adjust contrast and brightness of an Image.
+    :param img: numpy ndarray to be adjusted.
+    :param contrast_factor: How much to adjust the contrast.
+    :param brightness_factor: How much to adjust the brightness. Can be
+            any non negative number. 0 gives a black image, 1 gives the
+            original image while 2 increases the brightness by a factor of 2.
+    :return: numpy ndarray: Contrast adjusted image.
+    """
+
+    table = np.array([ i*contrast_factor + brightness_factor for i in range (0,256)]).clip(0,255).astype('uint8')
+    # same thing but a bit slower
+    # cv2.convertScaleAbs(img, alpha=brightness_factor, beta=0)
+    if img.shape[2]==1:
+        return cv2.LUT(img, table)[:,:,np.newaxis]
+    else:
+        return cv2.LUT(img, table)
+
+
 def draw_matches(query_image, images_matched, num_kp_matched, accurate):
     """
     Plot both the most similar image found in the db with the corresponding
@@ -107,10 +127,19 @@ class Retrieval:
         self.paintings_csv = paintings_csv
         self.paintings = self.__get_paintings__(paintings_db)
 
+    def __check_kp__(self, kp, min_bound, max_bound):
+        new_kp = []
+        for k in kp:
+            if min_bound[0] < k.pt[0] < max_bound[0] and min_bound[1] < k.pt[1] < max_bound[1]:
+                new_kp.append(k)
+        return new_kp
+
     def __compute_kp_descr__(self, im):
         # find keypoints and descriptors from an image given a detector
         gray_im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+        (X, Y) = gray_im.shape
         kp = self.ORB.detect(gray_im, None)
+        kp = self.__check_kp__(kp, (X/4, Y/4), (3*X/4, 3*Y/4))
         kp, des = self.ORB.compute(gray_im, kp)
         return kp, des
 
@@ -165,43 +194,44 @@ class Retrieval:
 
     def __is_accurate__(self, paintings):
         distances = [p.distance for p in paintings[:10]]
-        diff_between_first_two = distances[1] - distances[0]
-        var = distances[9] - distances[0]
         dist_best_one = [m.distance for m in paintings[0].matches]
-        """
-        if distances[0] < 50:
-            if var > 14:
-                return True
+
+        if len(dist_best_one)<3:
+            return False
+        if dist_best_one[2] <= 30:
+            if paintings[0].title != "Ritratto d'uomo":
+                if distances[0] > 65:
+                    return False
+                else:
+                    return True
             else:
-                return False
-        else:
-            if diff_between_first_two > 2 and var > 6:  # empirical parameter
-                return True
-            else:
-                return False
-        """
-        if dist_best_one[2] <= 30 and paintings[0].title != "Ritratto d'uomo":
-            if distances[0] > 65:
-                return False
-            else:
-                return True
+                if distances[9] - distances[0] < 7:
+                    return False
+                else:
+                    return True
         else:
             return False
 
     def retrieve_image(self, image, n_matches=10, save_findings=False, show=False, findings_dir='data/findings'):
         start = time.time()
 
+        im_adj = adjust_image(image, 2)
         # compute the descr and the kp of the image and save it as Image class
-        kp, descr = self.__compute_kp_descr__(image)
+        kp, descr = self.__compute_kp_descr__(im_adj)
         if not kp or len(kp) < 10:
             return None
+
         query_image = Image('query_image', image, descr, kp)
 
         print(f'--- retrieve the painting {query_image.filename}... ---')
 
         # do the retrieval
         findings = self.__nearest_neighbors__(query_image, self.paintings, n_matches)
-        accurate = self.__is_accurate__(findings)
+        if findings:
+            accurate = self.__is_accurate__(findings)
+        else:
+            accurate = False
+
         end = time.time()
         print(f'operation took: {end - start}s')
         if save_findings:
@@ -212,7 +242,7 @@ class Retrieval:
             finding['accurate'] = accurate
             with open(f'{findings_dir}/findings.json', 'w+') as outfile:
                 json.dump(finding, outfile)
-        if show:
+        if show and accurate:
             draw_matches(query_image, findings, n_matches, accurate)
 
         if accurate:

@@ -1,11 +1,10 @@
 import argparse
 import cv2
 import numpy as np
-import detection
-import perspective_correction
-import image_retrieval
-import people_det
-import localization
+from project import detection
+from project import perspective_correction
+from project import image_retrieval
+from project import people_det
 import os
 import json
 import scipy.stats
@@ -57,6 +56,8 @@ class Pipeline(object):
         self._rectification_out = os.path.join(output_path, 'rectification.json')
         self._retrieval_out = os.path.join(output_path, 'retrieval.json')
         self._video_out = os.path.join(output_path, 'video.avi')
+        self._ppl_det_out = os.path.join(output_path, 'ppl_det_out.json')
+        self._ppl_loc_out = os.path.join(output_path, '_ppl_loc_out.json')
 
         self._frame_w = None
         self._frame_h = None
@@ -68,8 +69,11 @@ class Pipeline(object):
         self._bounding_boxes = {}
         self._ims_rectified = {}
         self._ims_match = {}
-        self._ppl_bounding_boxes = {}
+        self._ppl_bounding_boxes = []
         self._frames_to_save = []
+        self._rooms = []
+        self.room = self.get_room
+        self.ppl_rooms = []
 
         cap = cv2.VideoCapture(self._video)
         if cap.isOpened():
@@ -81,8 +85,6 @@ class Pipeline(object):
         self.frame_bounding_boxes = None
         self.frame_ims_rectified = None
         self.frame_ims_matches = None
-        self.frame_room = None
-
         rooms = []
 
         if auto_skip:
@@ -105,6 +107,8 @@ class Pipeline(object):
             self.frame_ims_rectified = self._rectification.perspective_correction(frame, self.frame_bounding_boxes)
             print(f'DEBUG: bounding boxes {len(self.frame_bounding_boxes)}, ims rectified {len(self.frame_ims_rectified)}')
             self.frame_ims_matches = []
+
+            # rectification and retrieval of every bb
             for im_rectified in self.frame_ims_rectified:
                 if im_rectified is not None:
                     painting_match = self._retrieval.retrieve_image(im_rectified)
@@ -114,10 +118,19 @@ class Pipeline(object):
                 else:
                     self.frame_ims_matches.append(None)
 
+            # detect people in the frame
             self.frame_ppl_bounding_boxes = self._people_det.detect(frame)
 
+            # update room
             if rooms:
-                self.frame_room = scipy.stats.mode(rooms)[0][0]
+                print(f'-*-*- frame rooms: {scipy.stats.mode(rooms)[0][0]} -*-*-')
+                self._rooms.append(scipy.stats.mode(rooms)[0][0])
+            self.room = self.get_room
+
+            # associate a room to the goup of people found in the frame
+            if self.frame_ppl_bounding_boxes is not None:
+                self._ppl_bounding_boxes.append(self.frame_ppl_bounding_boxes)
+                self.ppl_rooms.append(self.room)
 
             self._bounding_boxes[self._cur_frame] = self.frame_bounding_boxes
             self._ims_rectified[self._cur_frame] = self.frame_ims_rectified
@@ -134,6 +147,10 @@ class Pipeline(object):
             json.dump(self._bounding_boxes, detection_out)
         with open(self._retrieval_out, 'w') as retrieval_out:
             json.dump(self._ims_match, retrieval_out)
+        with open(self._ppl_det_out, 'w') as ppl_det_out:
+            json.dump(self._ppl_bounding_boxes, ppl_det_out)
+        with open(self._ppl_loc_out, 'w') as ppl_loc_out:
+            json.dump(self.ppl_rooms, ppl_loc_out)
 
         for frame in self._ims_rectified.keys():
             suffix = f'f_{frame}'
@@ -154,6 +171,10 @@ class Pipeline(object):
             pass
         self.stop()
         self.save_outputs()
+
+    def _read_next_frame(self):
+        self._cur_frame += 1
+        return self._cap.read()
 
     @property
     def image_matching_bounding(self):
@@ -178,13 +199,17 @@ class Pipeline(object):
         if self.frame_ppl_bounding_boxes is not None:
             color = (255, 0, 0)
             for tensor in self.frame_ppl_bounding_boxes:
-                self._people_det.write(tensor, image, self.frame_room)
+                self._people_det.write(tensor, image, self.room)
 
         return image
 
-    def _read_next_frame(self):
-        self._cur_frame += 1
-        return self._cap.read()
+    @property
+    def get_room(self):
+        if self._rooms:
+            print(f'-*-*- room: {scipy.stats.mode(self._rooms)[0][0]} -*-*-')
+            return scipy.stats.mode(self._rooms)[0][0]
+        else:
+            return 'not detected'
 
 
 def console_entry_point():
@@ -192,6 +217,7 @@ def console_entry_point():
 
     pipe = Pipeline(**args.__dict__)
     pipe.autoplay()
+
 
 if __name__ == '__main__':
     console_entry_point()

@@ -7,6 +7,7 @@ import math
 import scipy.spatial.distance
 #import the necessary library :)
 
+
 def show_image(image):
     """
     Function to plot an image
@@ -16,6 +17,7 @@ def show_image(image):
     cv2.imshow("Immagine",image)
     cv2.waitKey(0)
     return None
+
 
 def find_4corners(approx_corners):
     """
@@ -45,6 +47,7 @@ def find_4corners(approx_corners):
     #print('\nAll the corner points are: ' + str([tl,bl,br,tr]))
     return [tl,bl,br,tr]
 
+
 def find_corners(image):
     
     """
@@ -69,6 +72,7 @@ def find_corners(image):
     epsilon = 0.015*cv2.arcLength(cnt, True)
     approx_corners = cv2.approxPolyDP(cnt, epsilon, True)
     return approx_corners
+
 
 def find_edges(image):
     
@@ -98,6 +102,7 @@ def find_edges(image):
     
     return approx_corners
 
+
 def rectification_db(image, image_db):
 
     """
@@ -118,6 +123,7 @@ def rectification_db(image, image_db):
     rectified_image = exposure.rescale_intensity(rectified_image, out_range = (0, 255))
     
     return image, rectified_image
+
 
 def perspective_correction(img):
     """

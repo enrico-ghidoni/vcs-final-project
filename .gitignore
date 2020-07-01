@@ -27,3 +27,6 @@ videos/
 
 # results of scripts execution
 out/
+
+#weights
+yolov3.weights

@@ -2,7 +2,7 @@ from __future__ import division
 
 import torch.nn as nn
 from torch.autograd import Variable
-from people_det_config.util import *
+from project.people_det_config.util import *
 
 
 def get_test_input():
