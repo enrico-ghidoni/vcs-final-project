@@ -25,7 +25,7 @@ def arg_parse():
                         default=0.8)
     parser.add_argument("--nms_thresh", dest="nms_thresh", help="NMS Threshhold", default=0.5)
     parser.add_argument("--cfg", dest='cfgfile', help="Config file",
-                        default="people_det_config/cfg/yolov3-c1.cfg", type=str)
+                        default="people_det_config/cfg/yolov3.cfg", type=str)
     parser.add_argument("--classes", dest='classes_file', help="Classes file",
                         default="people_det_config/coco.names", type=str)
     parser.add_argument("--pallete", dest='pallete_file', help="Pallete file",
@@ -46,7 +46,7 @@ class PeopleDetector:
     CUDA = torch.cuda.is_available()
 
     def __init__(self, config_dir,
-                 confidence=0.85, nms_thesh=0.5, reso=256):
+                 confidence=0.8, nms_thesh=0.5, reso=256):
 
         print("Checking config dir")
         self.__check_config_dir__(config_dir)
@@ -54,7 +54,7 @@ class PeopleDetector:
 
         print("Loading network")
 
-        cfgfile = f"{config_dir}/cfg/yolov3-c1.cfg"
+        cfgfile = f"{config_dir}/cfg/yolov3.cfg"
         weightsfile = f"{config_dir}/yolov3.weights"
         self.model = Darknet(cfgfile)
         self.model.load_weights(weightsfile)
@@ -82,8 +82,8 @@ class PeopleDetector:
         if not os.path.exists(config_dir):
             print(f'dir: {config_dir} does not exist')
             exit(1)
-        if not os.path.exists(f'{config_dir}/cfg/yolov3-c1.cfg'):
-            print(f'dir: {config_dir}/cfg/yolov3-c1.cfg does not exist')
+        if not os.path.exists(f'{config_dir}/cfg/yolov3.cfg'):
+            print(f'dir: {config_dir}/cfg/yolov3.cfg does not exist')
             exit(1)
         if not os.path.exists(f'{config_dir}/coco.names'):
             print(f'dir: {config_dir}/coco.names does not exist')

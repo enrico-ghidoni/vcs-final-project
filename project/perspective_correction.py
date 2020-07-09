@@ -6,9 +6,10 @@ import math
 import scipy.spatial.distance
 #import the necessary library :)
 
+
 class PaintingRectification(object):
     def __init__(self):
-        self.images =  []
+        self.images = []
             
     def find_4corners(self, approx_corners):
         """

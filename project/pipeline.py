@@ -69,11 +69,11 @@ class Pipeline(object):
         self._bounding_boxes = {}
         self._ims_rectified = {}
         self._ims_match = {}
-        self._ppl_bounding_boxes = []
+        self._ppl_bounding_boxes = {}
         self._frames_to_save = []
         self._rooms = []
         self.room = self.get_room
-        self.ppl_rooms = []
+        self.ppl_rooms = {}
 
         cap = cv2.VideoCapture(self._video)
         if cap.isOpened():
@@ -129,8 +129,8 @@ class Pipeline(object):
 
             # associate a room to the goup of people found in the frame
             if self.frame_ppl_bounding_boxes is not None:
-                self._ppl_bounding_boxes.append(self.frame_ppl_bounding_boxes)
-                self.ppl_rooms.append(self.room)
+                self._ppl_bounding_boxes[self._cur_frame] = self.frame_ppl_bounding_boxes.numpy().tolist()
+                self.ppl_rooms[self._cur_frame] = self.room
 
             self._bounding_boxes[self._cur_frame] = self.frame_bounding_boxes
             self._ims_rectified[self._cur_frame] = self.frame_ims_rectified
@@ -148,6 +148,7 @@ class Pipeline(object):
         with open(self._retrieval_out, 'w') as retrieval_out:
             json.dump(self._ims_match, retrieval_out)
         with open(self._ppl_det_out, 'w') as ppl_det_out:
+            print(self._ppl_bounding_boxes)
             json.dump(self._ppl_bounding_boxes, ppl_det_out)
         with open(self._ppl_loc_out, 'w') as ppl_loc_out:
             json.dump(self.ppl_rooms, ppl_loc_out)
@@ -165,7 +166,7 @@ class Pipeline(object):
         for frame in self._frames_to_save:
             print(video_writer.write(frame))
 
-    def autoplay(self, save_outputs = True):
+    def autoplay(self, save_outputs=True):
         self.start()
         while self.next_frame():
             pass

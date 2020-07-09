@@ -195,9 +195,8 @@ class Darknet(nn.Module):
                     map1 = outputs[i + layers[0]]
                     map2 = outputs[i + layers[1]]
                     x = torch.cat((map1, map2), 1)
-                
-    
-            elif  module_type == "shortcut":
+
+            elif module_type == "shortcut":
                 from_ = int(module["from"])
                 x = outputs[i-1] + outputs[i+from_]
     

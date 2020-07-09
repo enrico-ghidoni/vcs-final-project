@@ -176,12 +176,12 @@ class Retrieval:
 
         paintings = []
         # find best matches for each reference image
-        for image in reference_paintings:
+        for painting in reference_paintings:
             # brute force match
-            matches = self.BF.match(image.descriptors, query_image.descriptors)
+            matches = self.BF.match(painting.descriptors, query_image.descriptors)
             # save the sorted matches matches
-            image.matches = sorted(matches, key=lambda x: x.distance)
-            paintings.append(image)
+            painting.matches = sorted(matches, key=lambda x: x.distance)
+            paintings.append(painting)
         # compute for each set of matches the avg 'divergence' to the query one
         for p in paintings:
             p.distance = np.mean([match.distance for match in p.matches])

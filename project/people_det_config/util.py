@@ -160,7 +160,7 @@ def write_results(prediction, confidence, num_classes, nms_conf = 0.4):
 
         for cls in img_classes:
             #perform NMS
-
+            #print('classe: ')
             #get the detections with one particular class
             cls_mask = image_pred_*(image_pred_[:,-1] == cls).float().unsqueeze(1)
             class_mask_ind = torch.nonzero(cls_mask[:,-2]).squeeze()
@@ -171,6 +171,7 @@ def write_results(prediction, confidence, num_classes, nms_conf = 0.4):
             conf_sort_index = torch.sort(image_pred_class[:,4], descending = True )[1]
             image_pred_class = image_pred_class[conf_sort_index]
             idx = image_pred_class.size(0)   #Number of detections
+            #print(idx)
             
             for i in range(idx):
                 #Get the IOUs of all boxes that come after the one we are looking at 
@@ -193,6 +194,7 @@ def write_results(prediction, confidence, num_classes, nms_conf = 0.4):
                 
             batch_ind = image_pred_class.new(image_pred_class.size(0), 1).fill_(ind)      #Repeat the batch_id for as many detections of the class cls in the image
             seq = batch_ind, image_pred_class
+            #print(seq)
             
             if not write:
                 output = torch.cat(seq,1)
